@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>videy - free video hosting</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="wrapper">
+        <header><a href="/" class="logo">videy</a></header>
+        <main>
+            <div id="upload-container">
+                <input type="file" id="file-input" accept="video/*" style="display: none;">
+                <label for="file-input" class="upload-btn">Upload a video</label>
+            </div>
+            <div id="progress-wrapper" class="hidden">
+                <p id="upload-status">Uploading...</p>
+                <div class="progress-bar"><div id="progress-fill"></div></div>
+            </div>
+            <div id="result-wrapper" class="hidden">
+                <p>Your video is ready:</p>
+                <div class="link-field">
+                    <input type="text" id="result-url" readonly>
+                    <button id="copy-btn">Copy</button>
+                </div>
+                <div class="actions">
+                    <a id="view-link" href="#" target="_blank">Watch Video &rarr;</a>
+                    <a href="/">Upload another</a>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script>
+        const fileInput = document.getElementById('file-input');
+        fileInput.addEventListener('change', () => {
+            if (!fileInput.files.length) return;
+            document.getElementById('upload-container').classList.add('hidden');
+            document.getElementById('progress-wrapper').classList.remove('hidden');
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/upload', true);
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    document.getElementById('progress-fill').style.width = pct + '%';
+                    document.getElementById('upload-status').innerText = 'Uploading... ' + pct + '%';
+                }
+            };
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    const data = JSON.parse(xhr.responseText);
+                    const link = `${window.location.origin}/v?id=${data.id}`;
+                    document.getElementById('result-url').value = link;
+                    document.getElementById('view-link').href = link;
+                    document.getElementById('progress-wrapper').classList.add('hidden');
+                    document.getElementById('result-wrapper').classList.remove('hidden');
+                } else { alert('Upload failed'); location.reload(); }
+            };
+            xhr.send(formData);
+        });
+        document.getElementById('copy-btn').addEventListener('click', () => {
+            const input = document.getElementById('result-url');
+            input.select();
+            navigator.clipboard.writeText(input.value);
+            document.getElementById('copy-btn').innerText = 'Copied!';
+            setTimeout(() => document.getElementById('copy-btn').innerText = 'Copy', 2000);
+        });
+    </script>
+</body>
+</html>
